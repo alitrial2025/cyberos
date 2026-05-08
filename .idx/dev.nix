@@ -4,7 +4,11 @@
   # Which nixpkgs channel to use.
   channel = "stable-25.05";
   # Use https://search.nixos.org/packages to find packages
-  packages = [ pkgs.nodejs_20 ];
+  packages = [ 
+    pkgs.nodejs_20 
+    pkgs.glib
+    pkgs.pkg-config
+  ];
   # Sets environment variables in the workspace
   env = { EXPO_USE_FAST_RESOLVER = 1; };
   idx = {
@@ -16,7 +20,7 @@
       # Runs when a workspace is first created with this `dev.nix` file
       onCreate = {
         install =
-          "npm ci --prefer-offline --no-audit --no-progress --timing && npm i @expo/ngrok@^4.1.0 react@latest react-dom@latest react-native@latest && npm i -D @types/react@latest";
+          "npm install";
       };
       # Runs when a workspace restarted
       onStart = {
