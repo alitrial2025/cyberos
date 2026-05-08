@@ -5,8 +5,8 @@ import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
-type IconSymbolName = keyof typeof MAPPING;
+type IconMapping = Partial<Record<string, ComponentProps<typeof MaterialIcons>['name']>>;
+type IconSymbolName = Extract<SymbolViewProps['name'], string>;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -36,6 +36,14 @@ const MAPPING = {
   'lock.fill': 'lock',
   'person.2.fill': 'group',
   'play.tv.fill': 'live-tv',
+  
+  // CyberOS Specific
+  'target': 'gps-fixed',
+  'exclamationmark.shield.fill': 'security',
+  'lock.open.fill': 'lock-open',
+  'bolt.fill': 'bolt',
+  'key.fill': 'vpn-key',
+  'syringe.fill': 'medication',
 } as IconMapping;
 
 /**
@@ -55,5 +63,5 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  return <MaterialIcons color={color} size={size} name={MAPPING[name as string]} style={style} />;
 }

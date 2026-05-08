@@ -6,6 +6,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AuraColors, Fonts } from '@/constants/theme';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { CyberScanner } from '@/components/ui/CyberScanner';
+import { ThreatFeed } from '@/components/ui/ThreatFeed';
 
 const APP_DATA: Record<string, any> = {
   neural: {
@@ -17,6 +19,30 @@ const APP_DATA: Record<string, any> = {
       { label: 'SYNAPTIC LOAD', value: '12.4 ms', status: 'STABLE' },
       { label: 'CORTICAL DENSITY', value: '0.84', status: 'OPTIMAL' },
       { label: 'NEURAL LINK', value: 'CONNECTED', status: 'ACTIVE' },
+    ]
+  },
+  intel: {
+    title: 'CYBER INTELLIGENCE',
+    subtitle: 'ACTIVE SCANNING...',
+    color: AuraColors.neonCyan,
+    icon: 'target',
+    showScanner: true,
+    content: [
+      { label: 'NODES SCANNED', value: '1,248', status: 'SEARCHING' },
+      { label: 'ENCRYPTION STRENGTH', value: 'AES-4096', status: 'MAX' },
+      { label: 'ANONYMITY', value: 'GHOST_PROTOCOL', status: 'ACTIVE' },
+    ]
+  },
+  threats: {
+    title: 'THREAT CENTER',
+    subtitle: 'LIVE ATTACK MAP',
+    color: AuraColors.alertRed,
+    icon: 'exclamationmark.shield.fill',
+    showThreatFeed: true,
+    content: [
+      { label: 'ACTIVE ATTACKS', value: '24', status: 'CRITICAL' },
+      { label: 'DEFENSE STATUS', value: 'REINFORCED', status: 'STABLE' },
+      { label: 'FIREWALL LOAD', value: '82%', status: 'HIGH' },
     ]
   },
   sensors: {
@@ -101,8 +127,21 @@ export default function AppMockup() {
         </Animated.View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Custom Visualization for Intel/Threats */}
+          {data.showScanner && (
+            <Animated.View entering={FadeInDown.delay(200)} style={styles.scannerContainer}>
+               <CyberScanner size={240} color={data.color} />
+            </Animated.View>
+          )}
+
+          {data.showThreatFeed && (
+            <Animated.View entering={FadeInDown.delay(200)}>
+              <ThreatFeed />
+            </Animated.View>
+          )}
+
           {/* Main Hero Card */}
-          <Animated.View entering={FadeInDown.delay(200)}>
+          <Animated.View entering={FadeInDown.delay(data.showScanner || data.showThreatFeed ? 400 : 200)}>
             <GlassPanel style={styles.heroCard}>
               <View style={styles.heroGlow} />
               <IconSymbol name={data.icon} size={80} color={data.color} />
@@ -117,7 +156,7 @@ export default function AppMockup() {
           {/* Grid of details */}
           <View style={styles.detailsGrid}>
             {data.content.slice(1).map((item: any, index: number) => (
-              <Animated.View key={index} entering={FadeInDown.delay(300 + index * 100)} style={{ flex: 1 }}>
+              <Animated.View key={index} entering={FadeInDown.delay(500 + index * 100)} style={{ flex: 1 }}>
                 <GlassPanel style={styles.detailItem}>
                   <Text style={styles.detailLabel}>{item.label}</Text>
                   <Text style={styles.detailValue}>{item.value}</Text>
@@ -128,7 +167,7 @@ export default function AppMockup() {
           </View>
 
           {/* Action Area */}
-          <Animated.View entering={FadeInDown.delay(500)} style={styles.actionContainer}>
+          <Animated.View entering={FadeInDown.delay(700)} style={styles.actionContainer}>
             <TouchableOpacity style={styles.mainAction}>
               <GlassPanel style={styles.mainActionButton} intensity={60}>
                 <Text style={styles.mainActionText}>INITIALIZE SEQUENCE</Text>
@@ -150,7 +189,7 @@ export default function AppMockup() {
           </Animated.View>
 
           {/* Decorative Terminal-like output */}
-          <Animated.View entering={FadeInDown.delay(600)}>
+          <Animated.View entering={FadeInDown.delay(800)}>
             <GlassPanel style={styles.terminal}>
               <Text style={styles.terminalText}>[SYS] INITIALIZING {data.title}...</Text>
               <Text style={styles.terminalText}>[SYS] CHECKING INTEGRITY... OK</Text>
@@ -212,6 +251,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     gap: 20,
+  },
+  scannerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
   heroCard: {
     height: 200,

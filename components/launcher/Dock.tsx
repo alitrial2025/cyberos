@@ -3,6 +3,12 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { GlassPanel } from '../ui/GlassPanel';
 import { IconSymbol } from '../ui/icon-symbol';
 import { AuraColors } from '@/constants/theme';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withTiming 
+} from 'react-native-reanimated';
 
 export const Dock = () => {
   return (
@@ -19,11 +25,43 @@ export const Dock = () => {
   );
 };
 
-const DockIcon = ({ name, color }: { name: string; color: string }) => (
-  <TouchableOpacity style={styles.iconContainer}>
-    <IconSymbol name={name as any} size={28} color={color} />
-  </TouchableOpacity>
-);
+const DockIcon = ({ name, color }: { name: string; color: string }) => {
+  const scale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: scale.value * 1.5 }],
+  }));
+
+  const onPressIn = () => {
+    scale.value = withSpring(0.85);
+    glowOpacity.value = withTiming(0.6, { duration: 200 });
+  };
+
+  const onPressOut = () => {
+    scale.value = withSpring(1);
+    glowOpacity.value = withTiming(0, { duration: 400 });
+  };
+
+  return (
+    <TouchableOpacity 
+      activeOpacity={1}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      style={styles.iconContainer}
+    >
+      <Animated.View style={[styles.glowPulse, { backgroundColor: color }, glowStyle]} />
+      <Animated.View style={animatedStyle}>
+        <IconSymbol name={name as any} size={28} color={color} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -50,5 +88,12 @@ const styles = StyleSheet.create({
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  glowPulse: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    opacity: 0.5,
   },
 });

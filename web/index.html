@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber OS | Secure Node - Privacy & Terms</title>
+    <meta name="description" content="Official documentation for Cyber OS - The encrypted streaming framework.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00f2ff; /* Cyber Cyan */
+            --secondary: #7000ff; /* Neon Purple */
+            --bg: #030303;
+            --terminal-bg: rgba(0, 10, 10, 0.85);
+            --text-main: #e0faff;
+            --text-muted: #627d82;
+            --border: #003a3d;
+            --glow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Matrix/Code Background Effect */
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.15;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .system-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            color: #fff;
+            text-shadow: var(--glow);
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .logo::after {
+            content: 'SECURE_OS';
+            position: absolute;
+            bottom: -10px;
+            right: -20px;
+            font-size: 0.9rem;
+            background: var(--primary);
+            color: #000;
+            padding: 2px 8px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .tab-btn {
+            padding: 1rem 2.5rem;
+            border: 1px solid var(--border);
+            background: rgba(0, 242, 255, 0.03);
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 0;
+            background: var(--primary);
+            transition: height 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(0, 242, 255, 0.07);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(0, 242, 255, 0.1);
+            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.1);
+        }
+
+        .tab-btn.active::before {
+            height: 100%;
+        }
+
+        .content-section {
+            display: none;
+            background: var(--terminal-bg);
+            padding: 4rem;
+            border: 1px solid var(--border);
+            position: relative;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        .content-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+
+        .content-section.active {
+            display: block;
+            animation: scanline 0.2s linear;
+        }
+
+        @keyframes scanline {
+            0% { filter: brightness(1.5) contrast(1.2); }
+            100% { filter: brightness(1) contrast(1); }
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h1::before {
+            content: '>';
+            color: var(--text-muted);
+        }
+
+        h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p, li {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        .highlight {
+            color: var(--primary);
+            background: rgba(0, 242, 255, 0.1);
+            padding: 0 4px;
+        }
+
+        .encryption-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(112, 0, 255, 0.2);
+            border: 1px solid var(--secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #d1b3ff;
+            margin-bottom: 2rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 6rem;
+            padding-bottom: 3rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #314a4d;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .content-section { padding: 2rem; }
+            .logo { font-size: 2.5rem; }
+            .tabs { flex-direction: column; width: 100%; }
+            .tab-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+
+    <div class="container">
+        <header>
+            <div class="system-status">
+                <div class="status-dot"></div>
+                System Integrity: Secure
+            </div>
+            <div class="logo">Cyber OS</div>
+            <p style="color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 1rem;">Protocol: Privacy_Standard_v4.0.1</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('privacy')">[ PRIVACY_POLICY ]</button>
+            <button class="tab-btn" onclick="showTab('terms')">[ TERMS_OF_SERVICE ]</button>
+        </div>
+
+        <div id="privacy" class="content-section active">
+            <div class="encryption-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                ENCRYPTED_DATA_TRANSMISSION_ACTIVE
+            </div>
+            <h1>Security & Privacy</h1>
+            <p>Last Sync: May 8, 2026</p>
+            
+            <p>The <span class="highlight">Cyber OS</span> architecture is built on the principle of Zero-Knowledge Privacy. This manifest outlines how your data is handled within our encrypted ecosystem.</p>
+
+            <h2>0x01 Data Collection</h2>
+            <p>We minimize data footprint to ensure maximum security. Our nodes collect:</p>
+            <ul>
+                <li><strong>Hashed Device ID:</strong> Anonymized identifier for session stability across TV/Mobile transitions.</li>
+                <li><strong>Local Cache:</strong> Preferences and watch history are stored locally on your hardware, never on our central relays.</li>
+                <li><strong>Telemetry:</strong> Real-time performance logs (non-PII) to maintain system integrity.</li>
+            </ul>
+
+            <h2>0x02 Encryption Protocols</h2>
+            <p>All outbound requests for metadata and stream URI resolution are routed through encrypted tunnels. We utilize <span class="highlight">AES-256</span> for local storage and TLS 1.3 for all network transmissions.</p>
+
+            <h2>0x03 Third-Party Handshakes</h2>
+            <p>Our framework interacts with external APIs (Firebase, IMDb) only through sanitized proxy layers to prevent IP leakage and fingerprinting.</p>
+
+            <h2>0x04 Contact Operator</h2>
+            <p>Query the administrator for data requests: <span class="highlight">admin@cyber-os.secure</span></p>
+        </div>
+
+        <div id="terms" class="content-section">
+            <h1>User Protocols</h1>
+            <p>Revision: 2026.08.05</p>
+
+            <h2>0x01 Authorization</h2>
+            <p>By initializing the <span class="highlight">Cyber OS</span> kernel, you agree to these operational protocols. Unauthorized modification of the application binary is strictly prohibited.</p>
+
+            <h2>0x02 Integrity & Usage</h2>
+            <p>Cyber OS provides a unified interface for data aggregation. Users are responsible for ensuring their use of the framework complies with local jurisdiction. You may not:</p>
+            <ul>
+                <li>Attempt to breach the framework's sandboxing.</li>
+                <li>Redistribute the binary for commercial gain.</li>
+                <li>Automate requests against the framework's API layer.</li>
+            </ul>
+
+            <h2>0x03 Content Aggregation Disclaimer</h2>
+            <p>Cyber OS acts as a secure browser for decentralized metadata. We do not host, store, or manage the underlying media streams. All content is ephemeral and resolved in real-time from public sources.</p>
+
+            <h2>0x04 Liability Sandbox</h2>
+            <p>Cyber OS is provided 'as-is' with zero warranty. The developers are not liable for any data loss, hardware failure, or external network issues resulting from the use of this framework.</p>
+        </div>
+
+        <footer>
+            <p>// NODE_ID: 77-AF-21 // &copy; 2026 Cyber OS // TERMINAL_ID: WEB_IF_01</p>
+        </footer>
+    </div>
+
+    <script>
+        // Matrix Effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const alphabet = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+
+        const rainDrops = [];
+
+        for( let x = 0; x < columns; x++ ) {
+            rainDrops[x] = 1;
+        }
+
+        const draw = () => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#00f2ff';
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i*fontSize, rainDrops[i]*fontSize);
+
+                if(rainDrops[i]*fontSize > canvas.height && Math.random() > 0.975){
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+        };
+
+        setInterval(draw, 30);
+
+        function showTab(tabId) {
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>

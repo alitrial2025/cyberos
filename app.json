@@ -1,17 +1,19 @@
 {
   "expo": {
-    "name": "aura-os",
-    "slug": "aura-os",
+    "name": "Cyber OS",
+    "slug": "cyber-os",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "auraos",
+    "scheme": "cyberos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cyberos.launcher"
     },
     "android": {
+      "package": "com.cyberos.launcher",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -43,6 +45,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "37a5cac8-7a15-490e-8b7a-b7f56aa55725"
+      }
+    },
+    "owner": "cyberos"
   }
 }

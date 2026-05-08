@@ -3,31 +3,36 @@ import { StyleSheet, View, Text, SafeAreaView, useWindowDimensions, Dimensions }
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
+  useDerivedValue,
   withSpring, 
   withTiming,
   withRepeat,
   withSequence,
   interpolate,
-  Extrapolate
+  Extrapolate,
+  SharedValue
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
 import { Accelerometer } from 'expo-sensors';
 import { DynamicWallpaper } from '@/components/ui/DynamicWallpaper';
 import { Dock } from '@/components/launcher/Dock';
-import { AppDrawer } from '@/components/launcher/AppDrawer';
-import { GamingDashboard } from '@/components/launcher/GamingDashboard';
 import { HomeScreenGrid } from '@/components/launcher/HomeScreenGrid';
 import { AuraColors, Fonts } from '@/constants/theme';
 import { GlassPanel } from '@/components/ui/GlassPanel';
+import { SystemLog } from '@/components/ui/SystemLog';
+import { NeuralMesh } from '@/components/ui/NeuralMesh';
+import { ThreatFeed } from '@/components/ui/ThreatFeed';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Neurological Notification Orb Concept
-function NeuralOrb() {
+function NeuralOrb({ progress }: { progress: SharedValue<number> }) {
   const scale = useSharedValue(1);
   const orbX = useSharedValue(0);
   const orbY = useSharedValue(0);
+  
+  const orbOpacity = useDerivedValue(() => 1 - progress.value);
 
   useEffect(() => {
     scale.value = withRepeat(
@@ -55,9 +60,10 @@ function NeuralOrb() {
   const orbStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: orbX.value },
-      { translateY: orbY.value },
-      { scale: scale.value }
-    ]
+      { translateY: orbY.value + interpolate(progress.value, [0, 1], [0, 50]) },
+      { scale: scale.value * interpolate(progress.value, [0, 1], [1, 2]) }
+    ],
+    opacity: interpolate(progress.value, [0, 0.5, 1], [1, 0.8, 1])
   }));
 
   return (
@@ -66,7 +72,9 @@ function NeuralOrb() {
         <BlurView intensity={60} style={styles.neuralOrb} tint="dark">
           <View style={styles.neuralOrbCore} />
         </BlurView>
-        <Text style={styles.orbText}>AURA INTELLIGENCE</Text>
+        <Animated.Text style={[styles.orbText, { opacity: orbOpacity }]}>
+          AURA INTELLIGENCE
+        </Animated.Text>
       </Animated.View>
     </GestureDetector>
   );
@@ -76,17 +84,32 @@ export default function HomeLauncher() {
   const { height } = useWindowDimensions();
   const [time, setTime] = useState(new Date());
 
-  // Animation values
-  const drawerY = useSharedValue(SCREEN_HEIGHT);
-  const dashboardY = useSharedValue(-SCREEN_HEIGHT);
+  // Unified transition progress
+  const drawerProgress = useSharedValue(0);
   
   // Parallax for 3D Layering
   const tiltX = useSharedValue(0);
   const tiltY = useSharedValue(0);
 
+  const dockOpacity = useDerivedValue(() => 1 - drawerProgress.value);
+  const hintOpacity = useDerivedValue(() => 0.5 - drawerProgress.value);
+
+  const clockJitter = useSharedValue(0);
+
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     
+    // Subtle Glitch Loop
+    const glitchInterval = setInterval(() => {
+      if (Math.random() > 0.95) {
+        clockJitter.value = withSequence(
+          withTiming(2, { duration: 50 }),
+          withTiming(-2, { duration: 50 }),
+          withTiming(0, { duration: 50 })
+        );
+      }
+    }, 1000);
+
     Accelerometer.setUpdateInterval(16);
     const subscription = Accelerometer.addListener(({ x, y }) => {
       tiltX.value = withSpring(x * 20, { damping: 20 });
@@ -102,58 +125,43 @@ export default function HomeLauncher() {
   // Gestures
   const drawerGesture = Gesture.Pan()
     .onUpdate((event) => {
-      drawerY.value = Math.max(height * 0.2, SCREEN_HEIGHT + event.translationY);
+      drawerProgress.value = Math.max(0, Math.min(1, -event.translationY / (height * 0.5)));
     })
     .onEnd((event) => {
-      if (event.velocityY < -500 || event.translationY < -height * 0.2) {
-        drawerY.value = withSpring(height * 0.2, { damping: 15 });
+      if (event.velocityY < -500 || drawerProgress.value > 0.4) {
+        drawerProgress.value = withSpring(1, { damping: 15 });
       } else {
-        drawerY.value = withSpring(SCREEN_HEIGHT, { damping: 15 });
+        drawerProgress.value = withSpring(0, { damping: 15 });
       }
     });
 
-  const dashboardGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      dashboardY.value = Math.min(0, -SCREEN_HEIGHT + event.translationY);
-    })
-    .onEnd((event) => {
-      if (event.velocityY > 500 || event.translationY > height * 0.2) {
-        dashboardY.value = withSpring(0, { damping: 15 });
-      } else {
-        dashboardY.value = withSpring(-SCREEN_HEIGHT, { damping: 15 });
-      }
-    });
-
-  const drawerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: drawerY.value }],
+  const hudStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(drawerProgress.value, [0, 0.5], [1, 0]),
+    transform: [
+      { scale: interpolate(drawerProgress.value, [0, 0.5], [1, 0.8]) },
+      { translateY: interpolate(drawerProgress.value, [0, 1], [0, -100]) }
+    ],
   }));
 
-  const dashboardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: dashboardY.value }],
+  const clockStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: clockJitter.value },
+      { skewX: `${clockJitter.value}deg` }
+    ],
+    color: clockJitter.value !== 0 ? AuraColors.neonMagenta : AuraColors.white,
   }));
 
-  const mainContentStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      drawerY.value,
-      [height * 0.2, SCREEN_HEIGHT],
-      [0.9, 1],
-      Extrapolate.CLAMP
-    );
-    const opacity = interpolate(
-      drawerY.value,
-      [height * 0.2, SCREEN_HEIGHT],
-      [0.5, 1],
-      Extrapolate.CLAMP
-    );
-    return {
-      transform: [
-        { scale },
-        { translateX: tiltX.value },
-        { translateY: -tiltY.value }
-      ],
-      opacity,
-    };
-  });
+  const meshStyle = useAnimatedStyle(() => ({
+    opacity: drawerProgress.value,
+    transform: [{ scale: interpolate(drawerProgress.value, [0, 1], [0.8, 1]) }]
+  }));
+
+  const mainContentStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: tiltX.value },
+      { translateY: -tiltY.value }
+    ],
+  }));
 
   const formatTime = (date: Date) => {
     const hours = date.getHours().toString().padStart(2, '0');
@@ -169,59 +177,82 @@ export default function HomeLauncher() {
   return (
     <View style={styles.container}>
       <DynamicWallpaper />
+      <SystemLog />
+      <NeuralMesh progress={drawerProgress} />
       
-      {/* Main Content */}
-      <Animated.View style={[styles.mainWrapper, mainContentStyle]}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.hudContainer}>
-            <Text style={styles.dateText}>{formatDate(time)}</Text>
-            <Text style={styles.clockText}>{formatTime(time)}</Text>
-            
-            <View style={styles.metricsContainer}>
-              <GlassPanel style={styles.metricItem}>
-                <Text style={styles.metricLabel}>SYSTEM</Text>
-                <Text style={styles.metricValue}>NOMINAL</Text>
-              </GlassPanel>
-              <GlassPanel style={styles.metricItem}>
-                <Text style={styles.metricLabel}>NEURAL</Text>
-                <Text style={[styles.metricValue, { color: AuraColors.neonCyan }]}>SYNCED</Text>
-              </GlassPanel>
-            </View>
-          </View>
-
-          {/* New Element: The AI Neural Orb & App Grid */}
-          <View style={styles.middleSpace}>
-            <NeuralOrb />
-            <HomeScreenGrid />
-          </View>
-
-          <Dock />
-        </SafeAreaView>
-      </Animated.View>
-
-      {/* Gaming Dashboard (Top Pull-down) */}
-      <GestureDetector gesture={dashboardGesture}>
-        <Animated.View style={[styles.dashboardWrapper, dashboardStyle]}>
-          <GlassPanel style={styles.dashboardContent} intensity={80}>
-            <GamingDashboard />
-            <View style={styles.pullTabBottom} />
-          </GlassPanel>
-        </Animated.View>
-      </GestureDetector>
-
-      {/* App Drawer (Bottom Pull-up) */}
       <GestureDetector gesture={drawerGesture}>
-        <Animated.View style={[styles.drawerWrapper, drawerStyle]}>
-          <GlassPanel style={styles.drawerContent} intensity={80}>
-            <View style={styles.pullTab} />
-            <AppDrawer />
-          </GlassPanel>
+        <Animated.View style={[styles.mainWrapper, mainContentStyle]}>
+          <SafeAreaView style={styles.safeArea}>
+            {/* HUD Content */}
+            <Animated.View style={[styles.hudContainer, hudStyle]}>
+              <View style={styles.hudHeader}>
+                <View style={styles.hudStatus}>
+                  <View style={[styles.statusDot, { backgroundColor: AuraColors.terminalGreen }]} />
+                  <Text style={styles.hudStatusText}>ENCRYPTED_NODE: 192.168.1.1</Text>
+                </View>
+                <Text style={styles.dateText}>{formatDate(time)}</Text>
+              </View>
+
+              <View style={styles.clockWrapper}>
+                <Animated.Text style={[styles.clockText, clockStyle]}>{formatTime(time)}</Animated.Text>
+                <View style={styles.clockGlow} />
+              </View>
+              
+              <View style={styles.telemetryGrid}>
+                <View style={styles.telemetryItem}>
+                  <Text style={styles.telemetryLabel}>BATT</Text>
+                  <View style={styles.telemetryBarContainer}>
+                    <View style={[styles.telemetryBar, { width: '82%', backgroundColor: AuraColors.neonCyan }]} />
+                  </View>
+                </View>
+                <View style={styles.telemetryItem}>
+                  <Text style={styles.telemetryLabel}>CPU</Text>
+                  <View style={styles.telemetryBarContainer}>
+                    <View style={[styles.telemetryBar, { width: '45%', backgroundColor: AuraColors.neonMagenta }]} />
+                  </View>
+                </View>
+                <View style={styles.telemetryItem}>
+                  <Text style={styles.telemetryLabel}>MEM</Text>
+                  <View style={styles.telemetryBarContainer}>
+                    <View style={[styles.telemetryBar, { width: '68%', backgroundColor: AuraColors.cyberpunkYellow }]} />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.threatFeedWrapper}>
+                <ThreatFeed />
+              </View>
+
+              <View style={styles.metricsContainer}>
+                <GlassPanel style={styles.metricItem}>
+                  <Text style={styles.metricLabel}>OS_INTEGRITY</Text>
+                  <Text style={styles.metricValue}>SECURE</Text>
+                </GlassPanel>
+                <GlassPanel style={styles.metricItem}>
+                  <Text style={styles.metricLabel}>FIREWALL</Text>
+                  <Text style={[styles.metricValue, { color: AuraColors.neonCyan }]}>ACTIVE</Text>
+                </GlassPanel>
+              </View>
+            </Animated.View>
+
+            {/* Neural Orb & Grid */}
+            <View style={styles.middleSpace}>
+              <NeuralOrb progress={drawerProgress} />
+              <HomeScreenGrid progress={drawerProgress} />
+            </View>
+
+            <Animated.View style={{ opacity: dockOpacity }}>
+              <Dock />
+            </Animated.View>
+          </SafeAreaView>
         </Animated.View>
       </GestureDetector>
 
-      {/* Gesture Areas */}
-      <View style={styles.topGestureArea} />
-      <View style={styles.bottomGestureArea} />
+      {/* Swipe Hint */}
+      <Animated.View style={[styles.swipeHint, { opacity: hintOpacity }]}>
+        <View style={styles.pullTab} />
+        <Text style={styles.swipeText}>NEURAL LINK</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -240,22 +271,98 @@ const styles = StyleSheet.create({
   },
   hudContainer: {
     padding: 24,
-    paddingTop: 80,
+    paddingTop: 60,
     alignItems: 'center',
+    width: '100%',
+  },
+  hudHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  hudStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    shadowRadius: 4,
+    shadowOpacity: 0.8,
+  },
+  hudStatusText: {
+    fontFamily: Fonts.tech,
+    color: AuraColors.terminalGreen,
+    fontSize: 8,
+    letterSpacing: 1,
   },
   dateText: {
     fontFamily: Fonts.tech,
-    color: AuraColors.neonCyan,
-    fontSize: 14,
+    color: AuraColors.nothingGrey,
+    fontSize: 10,
     letterSpacing: 2,
-    marginBottom: 8,
+  },
+  clockWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    width: '100%',
   },
   clockText: {
     fontFamily: Fonts.tech,
     color: AuraColors.white,
-    fontSize: 80,
+    fontSize: 90,
     fontWeight: '300',
+    letterSpacing: -2,
+    textShadowColor: 'rgba(0, 243, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  clockGlow: {
+    position: 'absolute',
+    width: 200,
+    height: 100,
+    backgroundColor: AuraColors.neonCyan,
+    opacity: 0.05,
+    borderRadius: 50,
+  },
+  telemetryGrid: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     marginBottom: 40,
+    gap: 20,
+  },
+  telemetryItem: {
+    flex: 1,
+    gap: 6,
+  },
+  telemetryLabel: {
+    fontFamily: Fonts.tech,
+    color: AuraColors.nothingGrey,
+    fontSize: 7,
+    letterSpacing: 1,
+  },
+  telemetryBarContainer: {
+    width: '100%',
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
+  },
+  telemetryBar: {
+    height: '100%',
+  },
+  threatFeedWrapper: {
+    width: '100%',
+    maxHeight: 200,
+    marginBottom: 30,
+    overflow: 'hidden',
   },
   metricsContainer: {
     flexDirection: 'row',
@@ -281,9 +388,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  swipeHint: {
+    position: 'absolute',
+    bottom: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  pullTab: {
+    width: 40,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    marginBottom: 10,
+  },
+  swipeText: {
+    fontFamily: Fonts.tech,
+    color: AuraColors.nothingGrey,
+    fontSize: 10,
+    letterSpacing: 4,
+  },
   neuralOrbContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   neuralOrb: {
     width: 100,
@@ -312,64 +439,5 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: 16,
     opacity: 0.8,
-  },
-  // Overlays
-  drawerWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_HEIGHT,
-  },
-  drawerContent: {
-    flex: 1,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    marginTop: 0,
-  },
-  dashboardWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_HEIGHT * 0.6,
-  },
-  dashboardContent: {
-    flex: 1,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-  },
-  pullTab: {
-    width: 40,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 10,
-  },
-  pullTabBottom: {
-    width: 40,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 12,
-    position: 'absolute',
-    bottom: 0,
-  },
-  topGestureArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-  },
-  bottomGestureArea: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
   },
 });
